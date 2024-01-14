@@ -1,7 +1,7 @@
 import gradio as gr
 import os, shutil
 
-import subprocess, os
+'''import subprocess, os
 assets_folder = "assets"
 if not os.path.exists(assets_folder):
     os.makedirs(assets_folder)
@@ -19,7 +19,7 @@ for file, link in files.items():
         try:
             subprocess.run(['wget', link, '-O', file_path], check=True)
         except subprocess.CalledProcessError as e:
-            print(f"Error downloading {file}: {e}")
+            print(f"Error downloading {file}: {e}")'''
             
 def show_available(filepath):
     return os.listdir(filepath)
@@ -39,7 +39,7 @@ def upload_file(file):
 
 with gr.Blocks() as app:
     with gr.Row():
-        dropbox = gr.Dropbox(label="Upload files")
+        dropbox = gr.File(label="Upload files")
         audio_picker = gr.Dropdown(label="",choices=show_available('audios'))
         dropbox.upload(fn=upload_file, inputs=['dropbox'],outputs=['audio_picker'])
 
