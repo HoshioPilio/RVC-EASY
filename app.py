@@ -1,5 +1,5 @@
 import gradio as gr
-import os
+import os, shutil
 
 import subprocess, os
 assets_folder = "assets"
@@ -21,11 +21,27 @@ for file, link in files.items():
         except subprocess.CalledProcessError as e:
             print(f"Error downloading {file}: {e}")
             
-def sorted(filepath):
+def show_available(filepath):
     return os.listdir(filepath)
+  
+def upload_file(file):
+    audio_formats = ['.wav', '.mp3', '.ogg', '.flac', '.aac']
+    file_name, file_extension = os.path.splitext(file.name)
+    if file_extension.lower() in audio_formats:
+        shutil.move(file.name,'audios')
+        return show_available('audios')
+    elif file_extension.lower().endswith('.pth'):
+        shutil.move(file.name,'assets/weights')
+    elif file_extension.lower().endswith('.index'):
+        shutil.move(file.name,'logs')
+    else:
+        print("Filetype not compatible")
+    return {"choices":show_available('audios'),"__type__": "update"}
 
-with gr.Blocks(title="🔊",theme=gr.themes.Base(primary_hue="rose",neutral_hue="zinc")) as app:
+with gr.Blocks() as app:
     with gr.Row():
-        weight = gr.Dropdown(choices=sorted('assets/weights'))
+        dropbox = gr.Dropbox(label="Upload files")
+        audio_picker= gr.Dropdown(label="",choices=show_available('audios'))
+        dropbox.upload(fn=upload_file, inputs=['dropbox'],outputs=['audio_picker'])
 
-app.launch()
+app.launch()  
