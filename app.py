@@ -41,6 +41,6 @@ with gr.Blocks() as app:
     with gr.Row():
         dropbox = gr.File(label="Upload files")
         audio_picker = gr.Dropdown(label="",choices=show_available('audios'))
-        dropbox.upload(fn=upload_file, inputs=['dropbox'],outputs=['audio_picker'])
+        dropbox.upload(fn=upload_file, inputs=[dropbox],outputs=[audio_picker])
 
 app.launch()  
