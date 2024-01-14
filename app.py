@@ -6,6 +6,6 @@ def sorted(filepath):
 
 with gr.Blocks(title="🔊",theme=gr.themes.Base(primary_hue="rose",neutral_hue="zinc")) as app:
     with gr.Row():
-        weight = gr.dropdown(choices=sorted('assets/weights'))
+        weight = gr.Dropdown(choices=sorted('assets/weights'))
 
 app.launch()
