@@ -29,7 +29,6 @@ def upload_file(file):
     file_name, file_extension = os.path.splitext(file.name)
     if file_extension.lower() in audio_formats:
         shutil.move(file.name,'audios')
-        return show_available('audios')
     elif file_extension.lower().endswith('.pth'):
         shutil.move(file.name,'assets/weights')
     elif file_extension.lower().endswith('.index'):
@@ -41,7 +40,7 @@ def upload_file(file):
 with gr.Blocks() as app:
     with gr.Row():
         dropbox = gr.Dropbox(label="Upload files")
-        audio_picker= gr.Dropdown(label="",choices=show_available('audios'))
+        audio_picker = gr.Dropdown(label="",choices=show_available('audios'))
         dropbox.upload(fn=upload_file, inputs=['dropbox'],outputs=['audio_picker'])
 
 app.launch()  
