@@ -181,6 +181,14 @@ with gr.Blocks(theme=gr.themes.Soft(), title="RVC-DEMO-Web 💻") as app:
                 ],
                 [vc_output1, vc_output2],
             )
-
+with gr.Row():
+        with gr.Tabs():
+            with gr.TabItem("2.Choose an audio file:"):
+                audio_picker = gr.Dropdown(label="",choices=show_available('audios'),value='',interactive=True)
+            with gr.TabItem("(Or upload a new file here)"):
+                dropbox = gr.File(label="Drop an audio here. (You can also drop a .pth or .index file here)")
+                dropbox.upload(fn=upload_file, inputs=[dropbox],outputs=[audio_picker,model_picker,dropbox])
+        audio_refresher = gr.Button("Refresh")
+        audio_refresher.click(fn=refresh,inputs=[],outputs=[audio_picker,model_picker])
 
 app.launch(share=True)
