@@ -116,7 +116,8 @@ def upload_file(file):
 def refresh():
     return {"choices":show_available('audios'),"__type__": "update"},{"choices":show_available('assets/weights'),"__type__": "update"}
   
-with gr.Blocks() as app:
+with gr.Blocks(theme=gr.themes.Soft(), title="EWSY GUI") as app:
+    gr.HTML("<h1> The Easy GUI 💻 </h1>")
     with gr.Row():
         with gr.Column():
             with gr.Tabs():
