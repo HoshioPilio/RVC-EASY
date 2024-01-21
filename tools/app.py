@@ -1,12 +1,12 @@
 import logging
 import os
-
 # os.system("wget -P cvec/ https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/hubert_base.pt")
+# os.system("wget -P cvec/ https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/rmvpe.pt")
 import gradio as gr
 from dotenv import load_dotenv
 
 from configs.config import Config
-from i18n.i18n import I18nAuto
+
 from infer.modules.vc.modules import VC
 
 logging.getLogger("numba").setLevel(logging.WARNING)
@@ -15,8 +15,6 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
-i18n = I18nAuto()
-logger.info(i18n)
 
 load_dotenv()
 config = Config()
@@ -37,34 +35,75 @@ for root, dirs, files in os.walk(index_root, topdown=False):
             index_paths.append("%s/%s" % (root, name))
 
 
-app = gr.Blocks()
-with app:
-    with gr.Tabs():
-        with gr.TabItem("在线demo"):
-            gr.Markdown(
-                value="""
-                RVC 在线demo
-                """
+def download_from_url(url, model):
+    if url == '':
+        return "URL cannot be left empty."
+    if model =='':
+        return "You need to name your model. For example: My-Model"
+    url = url.strip()
+    zip_dirs = ["zips", "unzips"]
+    for directory in zip_dirs:
+        if os.path.exists(directory):
+            shutil.rmtree(directory)
+    os.makedirs("zips", exist_ok=True)
+    os.makedirs("unzips", exist_ok=True)
+    zipfile = model + '.zip'
+    zipfile_path = './zips/' + zipfile
+    try:
+        if "drive.google.com" in url:
+            subprocess.run(["gdown", url, "--fuzzy", "-O", zipfile_path])
+        elif "mega.nz" in url:
+            m = Mega()
+            m.download_url(url, './zips')
+        else:
+            subprocess.run(["wget", url, "-O", zipfile_path])
+        for filename in os.listdir("./zips"):
+            if filename.endswith(".zip"):
+                zipfile_path = os.path.join("./zips/",filename)
+                shutil.unpack_archive(zipfile_path, "./unzips", 'zip')
+            else:
+                return "No zipfile found."
+        for root, dirs, files in os.walk('./unzips'):
+            for file in files:
+                file_path = os.path.join(root, file)
+                if file.endswith(".index"):
+                    os.mkdir(f'./logs/{model}')
+                    shutil.copy2(file_path,f'./logs/{model}')
+                elif "G_" not in file and "D_" not in file and file.endswith(".pth"):
+                    shutil.copy(file_path,f'./assets/weights/{model}.pth')
+        shutil.rmtree("zips")
+        shutil.rmtree("unzips")
+        return "Success."
+    except:
+        return "There's been an error."
+            
+def show_available(filepath):
+    return os.listdir(filepath)
+  
+
+
+with gr.Blocks(theme=gr.themes.Soft(), title="RVC-DEMO-Web 💻") as app:
+    gr.HTML("<h1> RVC DEMO 💻 </h1>")
             )
-            sid = gr.Dropdown(label=i18n("推理音色"), choices=sorted(names))
+            sid = gr.Dropdown(label=("inference"), choices=sorted(names))
             with gr.Column():
                 spk_item = gr.Slider(
                     minimum=0,
                     maximum=2333,
                     step=1,
-                    label=i18n("请选择说话人id"),
+                    label=("speaker id"),
                     value=0,
                     visible=False,
                     interactive=True,
                 )
             sid.change(fn=vc.get_vc, inputs=[sid], outputs=[spk_item])
             gr.Markdown(
-                value=i18n("男转女推荐+12key, 女转男推荐-12key, 如果音域爆炸导致音色失真也可以自己调整到合适音域. ")
+                value=("12key is recommended for converting male to female, and -12key is recommended for converting female to male. If the sound range explodes and the tone is distorted, you can adjust it to the appropriate range yourself.")
             )
-            vc_input3 = gr.Audio(label="上传音频（长度小于90秒）")
-            vc_transform0 = gr.Number(label=i18n("变调(整数, 半音数量, 升八度12降八度-12)"), value=0)
+            vc_input3 = gr.Audio(label="Upload audio (less than 90 seconds in length)")
+            vc_transform0 = gr.Number(label=("Transposition (integer, number of semitones, octave up 12 octave down -12)"), value=0)
             f0method0 = gr.Radio(
-                label=i18n("选择音高提取算法,输入歌声可用pm提速,harvest低音好但巨慢无比,crepe效果好但吃GPU"),
+                label=("Choose the pitch extraction algorithm. You can use pm to speed up the input singing. Harvest has good bass but is extremely slow. Crepe has good effect but consumes GPU."),
                 choices=["pm", "harvest", "crepe", "rmvpe"],
                 value="pm",
                 interactive=True,
@@ -72,34 +111,34 @@ with app:
             filter_radius0 = gr.Slider(
                 minimum=0,
                 maximum=7,
-                label=i18n(">=3则使用对harvest音高识别的结果使用中值滤波，数值为滤波半径，使用可以削弱哑音"),
+                label=(">=3, use median filtering on the harvest pitch recognition result, the value is the filter radius, which can weaken the mute sound."),
                 value=3,
                 step=1,
                 interactive=True,
             )
             with gr.Column():
                 file_index1 = gr.Textbox(
-                    label=i18n("特征检索库文件路径,为空则使用下拉的选择结果"),
+                    label=("Feature retrieval library file path, if empty, use the drop-down selection result"),
                     value="",
                     interactive=False,
                     visible=False,
                 )
             file_index2 = gr.Dropdown(
-                label=i18n("自动检测index路径,下拉式选择(dropdown)"),
+                label=("Automatically detect index path, drop-down selection (dropdown)"),
                 choices=sorted(index_paths),
                 interactive=True,
             )
             index_rate1 = gr.Slider(
                 minimum=0,
                 maximum=1,
-                label=i18n("检索特征占比"),
+                label=("Search feature proportion"),
                 value=0.88,
                 interactive=True,
             )
             resample_sr0 = gr.Slider(
                 minimum=0,
                 maximum=48000,
-                label=i18n("后处理重采样至最终采样率，0为不进行重采样"),
+                label=("Post-processing resampling to the final sampling rate, 0 means no resampling"),
                 value=0,
                 step=1,
                 interactive=True,
@@ -107,22 +146,22 @@ with app:
             rms_mix_rate0 = gr.Slider(
                 minimum=0,
                 maximum=1,
-                label=i18n("输入源音量包络替换输出音量包络融合比例，越靠近1越使用输出包络"),
+                label=("The input source volume envelope replaces the output volume envelope fusion ratio. The closer it is to 1, the more output envelope is used. "),
                 value=1,
                 interactive=True,
             )
             protect0 = gr.Slider(
                 minimum=0,
                 maximum=0.5,
-                label=i18n("保护清辅音和呼吸声，防止电音撕裂等artifact，拉满0.5不开启，调低加大保护力度但可能降低索引效果"),
+                label=("Protect unvoiced consonants and breathing sounds to prevent artifacts such as electronic sound tearing. Do not turn it on when it reaches 0.5. Turn it down to increase the protection but may reduce the indexing effect."),
                 value=0.33,
                 step=0.01,
                 interactive=True,
             )
-            f0_file = gr.File(label=i18n("F0曲线文件, 可选, 一行一个音高, 代替默认F0及升降调"))
-            but0 = gr.Button(i18n("转换"), variant="primary")
-            vc_output1 = gr.Textbox(label=i18n("输出信息"))
-            vc_output2 = gr.Audio(label=i18n("输出音频(右下角三个点,点了可以下载)"))
+            f0_file = gr.File(label=("F0 curve file, optional, one pitch per line, replacing the default F0 and rising and falling tones"))
+            but0 = gr.Button("Convert"), variant="primary")
+            vc_output1 = gr.Textbox(label=("Output information"))
+            vc_output2 = gr.Audio(label=("Output audio (three dots in the lower right corner, click to download)"))
             but0.click(
                 vc.vc_single,
                 [
@@ -144,4 +183,4 @@ with app:
             )
 
 
-app.launch()
+app.launch(share=True)
