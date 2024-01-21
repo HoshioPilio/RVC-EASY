@@ -143,6 +143,6 @@ with gr.Blocks() as app:
         audio_refresher.click(fn=refresh,inputs=[],outputs=[audio_picker,model_picker])
         convert_button = gr.Button("Convert")
         convert_button.click(convert, inputs=[audio_picker,model_picker])
-        
+        output = gr.Audio(label='output', show_share_button=False)
 app.queue()
-app.launch()
+app.launch(share=True)
