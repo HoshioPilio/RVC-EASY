@@ -902,9 +902,8 @@ def download_model_files(model):
     else:
         return None, f'Could not find {model}.pth or corresponding Index file.'
 
-with gr.Blocks(title="🔊",theme=gr.themes.Base(primary_hue="rose",neutral_hue="zinc")) as app:
-    with gr.Row():
-        gr.HTML("<img  src='file/a.png' alt='image'>")
+with gr.Blocks(theme=gr.themes.Soft(), title="EASY-RVC-Web 💻") as app:
+    gr.HTML("<h1> Easy GUI  </h1>")
     with gr.Tabs():
         with gr.TabItem(i18n("模型推理")):
             with gr.Row():
